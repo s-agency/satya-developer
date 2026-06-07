@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Online Exam Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="warning-indicator" id="warningIndicator">
+        Warning: Suspicious Activity Detected <span class="warning-count" id="warningCount">1</span>
+    </div>
+
+    <div class="container">
+        <!-- Registration Screen -->
+        <div class="registration-screen active">
+            <div class="card">
+                <h1>📝 Secure Online Exam Portal</h1>
+                <form id="registrationForm">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" id="fullName" required placeholder="Enter your full name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address *</label>
+                        <input type="email" id="email" required placeholder="Enter your email">
+                    </div>
+                    <button type="submit" class="btn">Start Exam 🚀</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Exam Screen -->
+        <div class="exam-screen">
+            <div class="exam-header">
+                <div class="camera-indicator">
+                    <div class="camera-dot"></div>
+                    <span>Camera Active</span>
+                </div>
+                <div class="timer" id="timer">60:00</div>
+                <div style="width: 100%;">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressBar"></div>
+                    </div>
+                    <div style="text-align: center; margin-top: 5px; font-size: 14px;">
+                        Question <span id="currentQ">1</span> of <span id="totalQ">50</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="question-card">
+                <div class="question-text" id="questionText"></div>
+                <div id="optionsContainer"></div>
+            </div>
+        </div>
+
+        <!-- Success Screen -->
+        <div class="success-screen">
+            <div class="card" style="text-align: center;">
+                <div class="success-icon">✅</div>
+                <h1>Exam Submitted Successfully!</h1>
+                <p style="font-size: 18px; margin-top: 20px; opacity: 0.8;">
+                    Your answers have been recorded. You will receive your results via email.
+                </p>
+                <p style="margin-top: 30px; font-size: 16px;">
+                    Thank you for participating!
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="modal" id="confirmModal">
+        <div class="modal-content">
+            <h2 style="margin-bottom: 20px;">⚠️ Important Instructions</h2>
+            <p style="line-height: 1.8; opacity: 0.9;">
+                • Exam duration: 60 minutes<br>
+                • 50 multiple choice questions<br>
+                • Camera will be monitored<br>
+                • Do NOT switch tabs or minimize<br>
+                • Exam will auto-submit if you do<br>
+                • Copying text is prohibited<br>
+                • Face must remain visible to camera<br>
+                • AI proctoring will monitor for suspicious activity<br>
+                • 3 warnings will result in auto-submission
+            </p>
+            <div class="modal-buttons">
+                <button class="modal-btn btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="modal-btn btn-confirm" onclick="startExam()">I Understand, Start</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div class="modal" id="loadingModal">
+        <div class="modal-content">
+            <div class="loader"></div>
+            <p style="margin-top: 20px;" id="loadingMessage">Loading...</p>
+        </div>
+    </div>
+
+    <!-- Already Submitted Modal -->
+    <div class="modal" id="alreadySubmittedModal">
+        <div class="modal-content">
+            <div class="success-icon">⚠️</div>
+            <h2>Exam Already Submitted</h2>
+            <p style="line-height: 1.8; margin-top: 20px; opacity: 0.9;">
+                You have already submitted your exam. You cannot attempt again.
+            </p>
+            <div class="modal-buttons">
+                <button class="modal-btn btn-confirm" onclick="closeAlreadySubmittedModal()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Box -->
+    <div class="camera-container" style="display: none;">
+        <div class="camera-label">AI Proctoring Active</div>
+        <video id="cameraBox" autoplay muted></video>
+        <div class="face-overlay" id="faceOverlay"></div>
+        <div class="detection-status" id="detectionStatus">Face Detected</div>
+    </div>
+
+    <video id="camera" autoplay muted></video>
+
+    <script src="script.js"></script>
+</body>
+</html>
+<style>
+    * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #000000;
+    min-height: 100vh;
+    color: #ffffff;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.registration-screen, .exam-screen, .success-screen {
+    display: none;
+    animation: fadeIn 0.5s ease-in;
+}
+
+.registration-screen.active, .exam-screen.active, .success-screen.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    background: #111111;
+    border-radius: 15px;
+    padding: 40px;
+    box-shadow: 0 8px 32px rgba(0, 255, 0, 0.1);
+    border: 1px solid #333333;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2.5em;
+    color: #00ff00;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #ffffff;
+}
+
+input, select {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #333333;
+    border-radius: 10px;
+    background: #000000;
+    color: #ffffff;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+select option {
+    background: #000000;
+    color: #ffffff;
+}
+
+.btn {
+    width: 100%;
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #00ff00;
+    color: #000000;
+    box-shadow: 0 5px 15px rgba(0, 255, 0, 0.3);
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 255, 0, 0.5);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.exam-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: #111111;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+    border: 1px solid #333333;
+    position: relative;
+}
+
+.timer {
+    font-size: 24px;
+    font-weight: bold;
+    color: #00ff00;
+    text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #333333;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #00ff00;
+    transition: width 0.3s ease;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.question-card {
+    background: #111111;
+    padding: 30px;
+    border-radius: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #333333;
+}
+
+.question-text {
+    font-size: 20px;
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+.option {
+    background: #000000;
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid #333333;
+}
+
+.option:hover {
+    background: #111111;
+    border-color: #00ff00;
+}
+
+.option.selected {
+    background: #111111;
+    border-color: #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: #111111;
+    padding: 40px;
+    border-radius: 15px;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+    border: 1px solid #333333;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.modal-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-confirm {
+    background: #00ff00;
+    color: #000000;
+}
+
+.btn-cancel {
+    background: #333333;
+    color: #ffffff;
+}
+
+.loader {
+    border: 4px solid #333333;
+    border-top: 4px solid #00ff00;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.camera-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #00ff00;
+}
+
+.camera-dot {
+    width: 12px;
+    height: 12px;
+    background: #00ff00;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.success-icon {
+    font-size: 80px;
+    color: #00ff00;
+    margin-bottom: 20px;
+}
+
+/* Camera box styling - Top Right */
+.camera-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 180px;
+    height: 120px;
+    background: #000000;
+    border: 2px solid #00ff00;
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 100;
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+}
+
+.camera-container video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.camera-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    color: #00ff00;
+    padding: 5px;
+    text-align: center;
+    font-size: 12px;
+}
+
+/* Warning indicator */
+.warning-indicator {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: #ff0000;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+}
+
+.warning-count {
+    background: white;
+    color: black;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 5px;
+}
+
+/* Face detection overlay */
+.face-overlay {
+    position: absolute;
+    border: 2px solid #00ff00;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .card {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 1.8em;
+    }
+
+    .question-text {
+        font-size: 18px;
+    }
+
+    .exam-header {
+        font-size: 14px;
+    }
+
+    .timer {
+        font-size: 20px;
+    }
+
+    .camera-container {
+        width: 150px;
+        height: 100px;
+        top: 10px;
+        right: 10px;
+    }
+}
+
+/* Hide the original video element */
+#camera {
+    display: none;
+}
+
+.detection-status {
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+    font-size: 10px;
+    color: #00ff00;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+</style>
+<script>
+    // ========== CONFIGURATION ==========
+const EXAM_DURATION = 120 * 120; // 60 minutes in seconds
+// ⚠️ REPLACE THIS WITH YOUR ACTUAL WEB APP URL
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzeTpVgJB_KVNJyTZyftm1ixMEZABF_2PcCPpHPXPjLOhxMHTOdvNULvfzUnfS-MyL1tQ/exec';
+
+
+
+// ========== BIOLOGY QUESTION BANK - ALL QUESTIONS IN ONE DOMAIN ==========
+const questionBank = {
+  "Biology": [
+    {q: "What element is contained in hemoglobin?", options: ["Mg", "Cl", "Na", "Fe"], correct: 3},
+    {q: "What are simple organic compounds with small molecules called?", options: ["Macromolecule", "Amino acid", "Monomer", "Fermentation"], correct: 2},
+    {q: "What is hyaloplasm?", options: ["Colorless colloidal system of cytoplasm", "Chemical substance", "Organoid", "DNA"], correct: 0},
+    {q: "In what disease do parasites enter blood, lymph nodes then cerebrospinal fluid?", options: ["Leishmania tropica", "Trypanosoma gambiense", "Leishmania donovani", "Trypanosoma cruzi"], correct: 1},
+    {q: "Anthroponoses are", options: ["Plant diseases only", "Diseases common in humans and animals", "Animal diseases only", "Diseases only in humans"], correct: 3},
+    {q: "Give example of auto invasion", options: ["Tapeworm eggs develop outward", "Dwarf tapeworm develops without leaving outside", "Human roundworm eggs develop from eggs", "Echinococcus eggs develop outward"], correct: 1},
+    {q: "Who was the first to identify cell protoplasm?", options: ["R. Brown in 1831", "N. Gryu in 1671", "Ya. Purkinje in 1839", "A. Leeuwenhoek in 1680"], correct: 2},
+    {q: "Which scientists rediscovered Mendel's laws? (1-Morgan, 2-De Vries, 3-Correns, 4-Nilsson, 5-Miller, 6-Cermak)", options: ["4,5,6", "2,3,4", "2,3,6", "1,2,4"], correct: 2},
+    {q: "By 1944, scientists proved transmission of genetic information is associated with DNA?", options: ["O. Avery, K. McLeod and M. McCarthy", "S.N. Ardashnikov, A.A. Prokofieva", "V.P.Efroimson, A.A.linovsky", "S.G. Levit, S.N. Davidenkov"], correct: 0},
+    {q: "Determine cause of Chagas disease?", options: ["Trypanosoma gambiense", "Trypanosoma cruzi", "Leishmania donovani", "Leishmania tropica"], correct: 1},
+    {q: "Which people have Down syndrome?", options: ["Only for women", "Only for men", "Only for small children", "For all people"], correct: 3},
+    {q: "What nutrients are trophic deposits?", options: ["Fat, vitamin", "Fats, carbohydrates, proteins", "Carbonated, enzyme", "Protein, vitamin"], correct: 1},
+    {q: "How many types of symbiosis are there?", options: ["2 types: synergism, antagonism", "Type 2: temporary, permanent", "2 types: endogenous, exogenous", "2 types: active, inactive (passive)"], correct: 0},
+    {q: "Exogenous feature?", options: ["The disease is based on anomalies in hereditary apparatus", "Living harmlessly through food waste", "It has different nature from injuries and disorders", "A biological phenomenon of coexistence"], correct: 2},
+    {q: "In which chromosomes is centromere at last chromosome arm (telomere)?", options: ["Submetacentric", "Metacentric", "Acrocentric", "Telocentric"], correct: 2},
+    {q: "What does medical parasitology study?", options: ["Methods for combating human genetic diseases", "Various diseases occurring in humans", "Parasites found in humans, diseases they cause", "Ways to combat diseases in animals"], correct: 2},
+    {q: "How many amino acids are in natural proteins?", options: ["40 different", "22 different", "30 different", "20 types"], correct: 3},
+    {q: "What is stem of lower plants called?", options: ["Mycellium", "Rhizoid", "Stem", "Thallus"], correct: 3},
+    {q: "Determine properties of gene. (1-Discreteness, 2-Stability, 3-Specificity, 4-Pleiotropy)", options: ["1,2,3,4", "1,2,3", "1,2,4", "2,3,4"], correct: 0},
+    {q: "When did French scientists discover operon principle of gene structure?", options: ["F. Jacob and J. Monod in 1961", "E. Chargaff and M.E. Labashev In 1961", "A. Korenberg, A. Korenberg In 1951", "S. Benzer and A. Korenberg In 1951"], correct: 0},
+    {q: "Which layer of the plasma membrane appears dark under electron microscopy?", options: ["Carbohydrate", "Protein", "Protein and lipid", "Lipid"], correct: 1},
+    {q: "What are organelles of movement in simple animals?", options: ["Overhead legs, fasteners", "Flagella, walking legs", "Eyelashes, walking legs", "Pseudopods, cilia, villi"], correct: 3},
+    {q: "What parasites spend most of life in free environment?", options: ["Constant", "Inactive (passive)", "Active", "Temporary"], correct: 3},
+    {q: "What is included in the cell?", options: ["Cell wall, plastid, protoplasm and nucleus", "Cell wall, protoplasm and nucleus", "Cell wall, cytoplasm and nucleus, nucleolus", "Cell wall, nucleus"], correct: 1},
+    {q: "What function ensures circulation of iron, sulfur, manganese?", options: ["Gas exchange function", "Concentration function", "Oxidation recovery function", "Biochemical functions"], correct: 2},
+    {q: "In what proportions does phenotypic division occur in F2 in dihybrid cross?", options: ["1: 2: 2: 4: 1: 2: 1: 2: 1", "9:3:3:1, 3:6:3:1:2:1", "9:3:3:1", "3:1, 1:2:1"], correct: 2},
+    {q: "Who studied phenomenon of genetic drift (genetic automatic processes)?", options: ["F. G. Dobryansky, N. V. Timofeev-Resovsky 1937-1938", "S. Wright, R. Fisher, N. P. Dubinin, D. D. Romashev in 1931-32", "N.P. Dubinin and D.D. Romashev in 1931-32", "Boveri and Flemming 1937-1938"], correct: 1},
+    {q: "If diheterozygous hybrid crossed with recessive homozygous organism, in what proportion genotype divides?", options: ["3:1", "1:1:1:1", "1:2:1", "1: 2: 2: 4: 1: 2: 1: 2: 1"], correct: 1},
+    {q: "In which branch of parasitology is study of parasitic worms?", options: ["Medical protozoology", "Medical arachnoentomology", "Medical helminthology", "Medical ethology"], correct: 2},
+    {q: "At what phase of meiosis does crossing over process occur?", options: ["Prophase II", "Prophase I", "Metaphase I", "Metaphase II"], correct: 1},
+    {q: "What genes cause death of body?", options: ["Inhibitor", "Hypostatic", "Lethal", "Suppressor"], correct: 2},
+    {q: "How does trypanosome move?", options: ["As result of vibration of curtain by eyelashes", "As result of vibration of curtain with hive and lengthening", "As result of vibration of undulating membrane", "As result of vibration of curtain and bending with false legs"], correct: 2},
+    {q: "When and which scientist isolated substance with acidic properties from nucleus called nucleic acid?", options: ["Altman in 1879", "Altman in 1889", "F. Miescher in 1889", "F. Miescher in 1879"], correct: 3},
+    {q: "What is infection of body by animal parasites?", options: ["Auto invasion", "Infection", "Infestation", "Autoreinvasion"], correct: 2},
+    {q: "How long does metaphase phase last?", options: ["6-40 min", "4-25 min", "9-30 min", "10-100 min"], correct: 0},
+    {q: "Which cellular organelle has electron-dense center containing enzymes (urate oxidase, catalase)?", options: ["Peroxisome", "Endoergonic", "Heterolysosome", "Exoergonic"], correct: 0},
+    {q: "Which organisms have narrow ecological valency?", options: ["Edaphotope", "Stenotops", "Climate", "Eurytope"], correct: 1},
+    {q: "Types of transport (in presence of carriers) when substances pass through membrane?", options: ["2 types: temporary and permanent", "2 types: passive and active", "2 types: endogenous and exogenous", "2 types: mono and poly"], correct: 1},
+    {q: "What is percentage of water in tooth enamel layer?", options: ["90%", "5%", "50%", "10%"], correct: 3},
+    {q: "How are diseases classified by etiology?", options: ["Temporary permanent", "Mono and polyphagous", "Active, inactive", "Endogenous, exogenous"], correct: 3},
+    {q: "In which countries is Chagas disease Trypanosoma cruzi widespread?", options: ["South Africa and Central Asia", "Central Asia and America", "In Latin American countries", "Beyond Central Asia and Caucasus"], correct: 2},
+    {q: "What function where living organisms accumulate chemical elements?", options: ["Biochemical functions", "Concentration function", "Gas exchange function", "Redox function"], correct: 1},
+    {q: "Which scientist called reticular structure of nerve cells the Golgi apparatus?", options: ["In 1892 D. I. Ivanovsky", "1898 K. Golgi", "Flemming in 1842", "In 1972, Singer"], correct: 1},
+    {q: "Which proteins do not penetrate the membrane completely?", options: ["Integral proteins", "Semi-integral proteins", "endopheric", "Peripheral"], correct: 1},
+    {q: "Who discovered law of similarity of embryos?", options: ["AOKovalevsky", "E. Heckel, F.Müller", "A.N.Severtsev", "K.Ber"], correct: 3},
+    {q: "How long does anaphase phase last?", options: ["4-25 min", "6-40 min", "9-30 min", "10-100 min"], correct: 0},
+    {q: "Find answer given by chromosomal diseases. (1-Phenylketonuria, 2-Down, 3-Albinism, 4-Shershevsky, 5-Hemophilia, 6-Color blindness, 7-Klinefelter)", options: ["2.4.7", "2,4,7 only", "1.3.5.6", "2,4,6,7"], correct: 0},
+    {q: "Who invented method of reproduction by androgenesis?", options: ["Boveri (in 1842)", "A.D. Tikhomirov (1885)", "Singer (1972)", "A. Astaurov (1937)"], correct: 3},
+    {q: "Mendel's third law", options: ["Law of gamete purity", "Law of Character Separation", "Law of independent inheritance of characters", "Law of Homogeneity"], correct: 2},
+    {q: "Find line listing macronutrients.", options: ["Mg, J, Cr, Co", "C, O, P, Fe", "Zn, C, O, Co", "K, Na, Ca, F"], correct: 1},
+    {q: "In what year was Darwin's most famous work published?", options: ["Appearance of species 1851-1854", "Appearance of species 1859", "Appearance of species 1875", "Appearance of species 1839"], correct: 1},
+    {q: "How many types of interspecies relationships are there?", options: ["2 types: predation, parasitism", "3 types: synocism, mutualism, commensalism", "2 types: Antibiosis, symbiosis", "2 types: endogenous, exogenous"], correct: 2},
+    {q: "What is Latin name for roundworm?", options: ["Nemathelminthes", "Annelids", "Coelenterata", "Arthropods"], correct: 0},
+    {q: "What organisms attack person mainly at night, sucking blood from lips?", options: ["Trypanosoma cruzi", "Triatoma infestans", "Leishmania tropica", "Leishmania donovani"], correct: 1},
+    {q: "Identify organisms transmitted by inoculation?", options: ["Malaria, trypanosoma", "Human lice, human roundworms", "Mosquitoes, cat sucker liverworts", "Bent head worm, schistosomiasis"], correct: 0},
+    {q: "Determine characteristics of metaphase. (1-Chromosomes move along equator, 2-Mitotic threads attached, 3-2n2c)", options: ["2.3", "1.3", "1.2", "1,2,3"], correct: 3},
+    {q: "Which flagellates reproduce by dividing in height?", options: ["Trypanosoma", "Intestinal Giardia", "Leishmania", "Trichomonas"], correct: 0},
+    {q: "How many chromosomes does squid have?", options: ["46", "104", "106", "48"], correct: 1},
+    {q: "Which American biochemist discovered rule of complementarity of bases?", options: ["M.E.Labashev", "E. Chargaff", "Astaunov", "A. Korenberg"], correct: 1},
+    {q: "Form of natural selection that preserves adaptive traits under constant conditions", options: ["Stabilizing selection", "Stabilizer selection", "Sexual selection", "Disruptive selection"], correct: 0},
+    {q: "How many inclusions does a cell contain?", options: ["3 types: trophic, secretory, excretory", "2 types: trophic, secretory", "4 types: trophic, secretory, excretory and pigmentary", "3 types: trophic, excretory and pigmentary"], correct: 2},
+    {q: "Plant biomass on land is called?", options: ["Phytobiomass", "Edaphotope", "Zoobiomass", "Climate"], correct: 0},
+    {q: "What is evolutionary process leading to formation of large systematic groups?", options: ["Microevolution", "Natural selection", "Artificial selection", "Macroevolution"], correct: 3},
+    {q: "What is phenomenon between telophase I and prophase II called?", options: ["Cytokinesis", "Interkinesis", "Interfacial", "Mitosis"], correct: 1},
+    {q: "What is formed from nucleoprotein complex formed by chromatin-DNA nucleohistones?", options: ["Mono and polychromatin", "Chromatid and chromosome", "Chromatid and chromonema", "Hetero and euchromatin"], correct: 3},
+    {q: "Which belongs to the group of common organelles?", options: ["Myofibrils, tonofibrils, neurofibrils, flagellum, eyelashes", "Ribosomes, Golgi complex, lysosomes, peroxisomes, myofibrils, tonofibrils, neurofibrils", "Mitochondria, lysosomes, centrosome, micro tubes, flagellum, eyelashes", "Mitochondria, endoplasmic reticulum, ribosome, Golgi complex, lysosome, cell centrosome, peroxisome"], correct: 3},
+    {q: "What do you mean by antibiosis?", options: ["Two species can live together and die", "Competition for space, not food", "The inability of two species to live together", "Coexistence of all types of organisms"], correct: 2},
+    {q: "What are those who live off living organism?", options: ["Phototrophs", "Saprophytes", "Chemotrophs", "Parasites"], correct: 3},
+    {q: "What functions does the outer shell of a eukaryotic cell perform?", options: ["All answers are correct", "Transport transfer", "Protective Barrier", "Receptor function"], correct: 0},
+    {q: "How many ATF molecules are destroyed during glycolysis?", options: ["8 molecules", "2 molecules", "36 molecules", "20 molecules"], correct: 1},
+    {q: "How long does it take for bacteria to divide?", options: ["Every other 30 minutes", "Every 2 hours", "Every 1 hour", "Every 20 minutes"], correct: 3},
+    {q: "What is the structure of the plasma membrane?", options: ["Lipoprotein complex", "Microfibril complex", "Contains proteins and DNA", "Microtube complex"], correct: 0},
+    {q: "On which plant were viruses first discovered?", options: ["Chamomile", "Datura", "Chinar", "Tobacco leaves"], correct: 3},
+    {q: "What are equal-armed chromosomes called?", options: ["Metacentric", "Telocentric", "Submetacentric", "Acrocentric"], correct: 0},
+    {q: "Symbiosis is:", options: ["Type of food competition", "Failure of two species to live together", "Life together", "Type of competition for place and food"], correct: 2},
+    {q: "What is combination of nitrogenous base and ribose or deoxyribose?", options: ["Nucleic acid", "Nucleotide", "Nucleoside", "Protein"], correct: 2},
+    {q: "When did scientist discover DNA polymerase enzyme?", options: ["E. Chargaff in 1958", "S. Benzer In 1958", "A. Korenberg in 1956", "M.E.Labashev in 1956"], correct: 2},
+    {q: "What did Darwin discover during Beagle voyage?", options: ["Only many similarities between animals that had died", "Many similarities between existing animals and those still alive", "Many similarities and differences between plants that died and alive", "Many similarities and differences between animals that died and alive"], correct: 3},
+    {q: "If 60,000 species of parasites exist, how many parasitize human body?", options: ["More than 1000", "More than 100", "More than 150", "More than 1500"], correct: 0},
+    {q: "What factors influence interaction of living organisms with each other?", options: ["Biotic", "Ecological", "Anthropogenic", "Abiotic"], correct: 0},
+    {q: "What are main theories of origin of life? (1-creationism, 2-origin, 3-panspermia, 4-biochemical evolution, 5-synthetic, 6-geocentric, 7-heliocentric)", options: ["1,2,3,4", "2,5,4,6", "1,3,5,6,7", "1,3,5,7"], correct: 0},
+    {q: "What method is used to study population and general state of species?", options: ["Dahl method", "Mathematical modeling method", "Method of ecological experiments", "Field method"], correct: 3},
+    {q: "What type of inclusion gives cell a certain color?", options: ["Pigmented", "Trophic", "excretor", "Secretary"], correct: 0},
+    {q: "What is totality of quantitative and qualitative characteristics of chromosome set called?", options: ["Karyotype", "Haploid", "Chromatin", "Diploid"], correct: 0},
+    {q: "What organisms have both autotrophic and heterotrophic types?", options: ["Mixotrophs", "Phototroph", "Autotroph", "Chemotroph"], correct: 0},
+    {q: "Which type of trypanosome causes serious sleeping sickness?", options: ["Trypanosoma gambiense", "Leishmania donovani", "Trypanosoma cruzi", "Leishmania tropica"], correct: 0},
+    {q: "How many types of gametogamy are there in copulation?", options: ["3 types: isogamy, heterogamy and oogamy", "Type 2: isogamy and heterogamy", "3 types: isogamy, polygamy and ugamy", "Type 2: isogamy and polygamy"], correct: 0},
+    {q: "Which scientist introduced nucleic acid term and showed nucleus contains purine and pyrimidine?", options: ["Avery in 1944", "1952 Lederberg", "1928 Griffith", "In 1889 R. Altmann"], correct: 3},
+    {q: "Parasite passively enters body through:", options: ["Through soil", "Through water, food", "By plane", "Through wind"], correct: 1},
+    {q: "How long does prophase phase last?", options: ["4-25 min", "10-100 min", "9-30 min", "6-40 min"], correct: 1},
+    {q: "How can history of genetics be divided into periods?", options: ["Classics (1900-1930) and synthetics 1954", "Classic (1900-1930), neoclassicism (1930-1953) and synthetics 1954", "Neoclassicism (1930-1953) and synthetics 1954", "Classic (1900-1930), neoclassicism (1930-1953)"], correct: 1},
+    {q: "What is karyokinesis?", options: ["i-RNA formation", "Nuclear fission", "Cytoplasmic division", "Copying chromosomes"], correct: 1},
+    {q: "What are microorganisms and animals causing disease called?", options: ["Mixotrophic organisms", "Heterotrophic organisms", "Pathogenic organism", "Nopathogenic organism"], correct: 2},
+    {q: "Determine method of reproduction characteristic of bacteria and ciliates?", options: ["Schizogony", "conjugation", "Ovogonia", "Copulation"], correct: 1},
+    {q: "What is microevolution?", options: ["This is long-term change in gene pool in certain direction", "Leads to stratification within population and species", "Diversity refers to diversity of higher systematic units", "It is mutational process creating material for genetic diversity"], correct: 1},
+    {q: "Find line listing micronutrients.", options: ["K, Na, Ca, O", "Mo, C, O, Cr", "Mg, Cl, Fe, Co", "Zn, Co, Mn, J"], correct: 3},
+    {q: "Darwin explained evolutionary mechanism. How did this lead to education?", options: ["Evolutionary theory as evolutionary doctrine", "Like artificial selection, natural selection", "Stability of species, emergence of species", "Adaptation of species, emergence of species"], correct: 0},
+    {q: "What elements are found in bone?", options: ["Ca, S", "P,Na", "P, Ca", "Mg,Cl"], correct: 2},
+    {q: "Which scientist combined species into genera, genus into family?", options: ["Lamarck", "Theophrastus", "Linnaeus", "Darwin"], correct: 2},
+    {q: "Find examples of suitable form of antibiotic?", options: ["Bacteriophages and unicellular algae", "Yeast fungus and perennial plant", "Saprophytic bacteria and molds", "Cyanobacteria and lichens"], correct: 2},
+    {q: "What role does the cell membrane play in movement of matter and ions?", options: ["Reproduction", "Turgor noyu", "Control of cell division", "Barrier new"], correct: 3},
+    {q: "What do you mean by elongation?", options: ["Exchange and shortening of polypeptide chain", "Completion of polypeptide chain formation", "Initiation of polypeptide chain synthesis", "Elongation of polypeptide chain"], correct: 3},
+    {q: "Which parasitism is parasitic way of life for species?", options: ["Real", "Obligate", "Optional", "Lie"], correct: 1},
+    {q: "What is termination?", options: ["Initiation of polypeptide chain synthesis", "Exchange and shortening of chain", "Elongation of polypeptide chain", "End of polypeptide chain formation"], correct: 3},
+    {q: "What is elementary evolutionary phenomenon?", options: ["It is mutational process", "This is long-term change in gene pool of population", "Diversity refers to diversity of higher systematic units", "It occurs within populations"], correct: 1},
+    {q: "What is initiation?", options: ["Exchange and shortening of chain", "Elongation of polypeptide chain", "Completion of polypeptide chain formation", "Initiation of polypeptide chain synthesis"], correct: 3},
+    {q: "What are very well colored parts of chromosome called?", options: ["Chromatin", "Chromomere", "Chromatid", "Chromonema"], correct: 1},
+    {q: "What progress (aromorphosis) characterizes improvement in evolution?", options: ["Idiomatic adaptation", "Senogenesis", "Aromorphosis", "Morphophysiological"], correct: 3},
+    {q: "What is main factor in production of new varieties?", options: ["Genetic variability, natural selection", "Genetic variability, artificial selection", "Artificial selection and natural selection", "Heredity and variability"], correct: 1},
+    {q: "What is name given to preventing formation of enzymes in protein biosynthesis?", options: ["Complementer", "Repression", "Suppressor", "Inhibitor"], correct: 1},
+    {q: "What parasitism is feature of species that appeared in evolution?", options: ["Lie", "Bond", "Optional", "True"], correct: 3},
+    {q: "What role does blood protein play?", options: ["Catalyst", "Hormone", "Excitability", "Transport"], correct: 3},
+    {q: "What groups are simple animals divided into by assimilation type?", options: ["Autotrophic, mixotrophic organisms", "Phototrophic, chemotrophic organisms", "Saprophytes, parasitic organisms", "heterotrophic and mixotrophic organisms"], correct: 3},
+    {q: "What are spherical bacteria called?", options: ["Vibrio", "Cocci", "Spirillum", "Bacillus"], correct: 1},
+    {q: "What kind of reproduction does not change constancy of chromosome number?", options: ["Meiosis", "Parthenogenesis", "Amitosis", "Mitosis"], correct: 0},
+    {q: "Endogenous feature?", options: ["Having different nature from injuries", "Living harmlessly through food waste", "The disease is based on anomalies in hereditary apparatus", "A biological phenomenon of coexistence"], correct: 2},
+    {q: "What diseases are caused by living organisms?", options: ["Mono and polyphagous", "Temporary permanent", "Active, inactive", "Infectious, parasitic"], correct: 3},
+    {q: "What is smallest part of gene that can be modified?", options: ["Chromatid", "Recon", "Sistron", "Mouton"], correct: 3},
+    {q: "How many nuclei are in ciliate?", options: ["2 nuclei: large macronucleus and small micronucleus", "2 cores: large and extra large", "2 nuclei: contractile and aggregating", "2 nuclei: vegetative, digestive"], correct: 0},
+    {q: "What substances does the cell membrane conduct?", options: ["Protein carries fats", "water, ions and necessary substances", "Conducts proteins, fats, ions", "Transports protein, fats and unwanted substances"], correct: 1},
+    {q: "Modern definition of cell theory.", options: ["The nucleus is the main organelle", "Life cell form: Cells reproduce by dividing", "Cell is the smallest unit of life", "Cells arise only from pre-existing cells"], correct: 2},
+    {q: "What is decrease in activity of enzymes in protein biosynthesis called?", options: ["Inhibition", "Suppressor", "Complementer", "Repression"], correct: 0},
+    {q: "By what rule is there increase in energy consumption at each food level?", options: ["Biocenosis", "Ecological pyramid", "Biogeocenosis", "Biosphere"], correct: 1},
+    {q: "The shell of viruses, consisting of proteins and lipids", options: ["Glycolipid", "Supercapsid", "Biomolecular phospholipids", "Biopolymer phospholipids"], correct: 1},
+    {q: "What method can solve problems of karyotype and chromosomal mutations?", options: ["Hybridization", "Cytogenetic", "Ontogenetic", "Immunogenetics"], correct: 1},
+    {q: "Where do lysosomes mature?", options: ["In endoplasmic reticulum", "In nucleolus", "In the Golgi complex", "In mitochondria"], correct: 2},
+    {q: "Find characteristics of a centriole.", options: ["Hollow, diameter 150nm, length 300-500 nm", "Hollow, diameter 15 nm, length 30-50 nm", "Hollow, diameter 50 nm, length 10-100 nm", "Inner hollow, diameter 10 nm, length 3-500 nm"], correct: 0},
+    {q: "Found example of commensalism?", options: ["E. coli bacteria in humans", "Bent head worm, schistosomiasis", "Iskabtopar living in rodent nest", "Oral and intestinal amoebas"], correct: 3},
+    {q: "Which scientists created chromosomal theory of heredity?", options: ["A. Korenberg, A. Sturtevant, K. Bridges, T. Morgan 1909-11", "S.G. Levit, A. Sturtevant, K. Bridges, Mendel 1909-11", "T. Morgan, A. Sturtevant, K. Bridges, G. Mellerlar 1909-11", "A. Sturtevant, C. Bridges, O. Avery 1909-11"], correct: 2},
+    {q: "What is formed as result of artificial selection? (1-breed, 2-variety, 3-species, 4-subspecies, 5-population, 6-strain)", options: ["1.2.6", "1.2.5", "1.4.6", "1.2.3"], correct: 0},
+    {q: "Which scientists made significant contributions to development of human genetics?", options: ["Only S.N. Ardashnikov", "All of the above are correct", "V.P.Efroimson, A.A.linovsky", "S.N. Ardashnikov, A.A. Prokofieva"], correct: 1},
+    {q: "Enzymes that break down fats", options: ["Lias", "Transferases", "Lipases", "Anhydrazas"], correct: 2},
+    {q: "Is assimilation a process?", options: ["Catabolism", "Energy exchange", "Endoergonic", "Exoergonic"], correct: 2},
+    {q: "Which scientists substantiated chromosomal theory of heredity?", options: ["Hugo de Vries, V. Johansen", "V. Johannsen, W. Setton", "E. Wilson, Hugo de Vries", "T. Boveri, W. Setton"], correct: 3},
+    {q: "Which stage of mitosis is not observed?", options: ["Metaphase", "Prophase", "Cytokinesis", "Interkinesis"], correct: 3},
+    {q: "Form of selection that favors only one direction of change in trait?", options: ["Stabilizer selection", "Sexual selection", "Driving selection", "Disruptive selection"], correct: 2},
+    {q: "Which layer looks light under electron microscopy?", options: ["Biopolymer phospholipids", "Biomolecular phospholipids", "Glycolipid", "Nucleoprotein"], correct: 1},
+    {q: "Which evolution is irreversible?", options: ["Galactic", "Geological", "Atom ary", "Biological"], correct: 3},
+    {q: "The vacuolar system of the cell is", options: ["Mitochondria, ribosome", "Mitochondria, plastids", "Golgi apparatus, endoplasmic reticulum", "Mitochondria, centrioles"], correct: 2},
+    {q: "Which scientist was awarded Darwin Order in 1924, Nobel Prize in 1933?", options: ["Mendel", "Morgan", "Misher", "De Vries"], correct: 1},
+    {q: "Which organelle does definition refer to - function is protein synthesis and transport?", options: ["Smooth endoplasmic reticulum", "Endoplasmic reticulum", "Golgi apparatus", "Lysosome"], correct: 1},
+    {q: "How many species of flagellates?", options: ["More than 300 types", "More than 2000 species", "More than 200 species", "More than 3000 species"], correct: 0},
+    {q: "Which years included Darwin's Beagle expeditions?", options: ["1831-1836", "1800-1805", "1830-1835", "1836-1941"], correct: 0},
+    {q: "What is elementary material of evolution?", options: ["Mutations creating material for genetic diversity", "The diversity of systematic units", "It occurs within populations", "This is long-term change in gene pool"], correct: 0},
+    {q: "In which organs is the granular endoplasmic reticulum developed?", options: ["Spleen, liver", "Stomach, liver, kidneys", "Pancreas, liver", "Kidneys, blood"], correct: 2},
+    {q: "Which scientist separated virulent bacterium (S-type) into small pieces?", options: ["Oparin", "Avery", "Miller", "Holden"], correct: 1},
+    {q: "Find a double-membrane cell organelle.", options: ["Mitochondria", "Lysosome", "Ribosome", "Golgi apparatus"], correct: 0},
+    {q: "What is total mass of living matter in biosphere called?", options: ["Phytobiomass", "Zoobiomass", "Biomass", "Edaphotope"], correct: 2},
+    {q: "Find Latin name for Sporozoans", options: ["Ciliates (Ciliophora)", "Sarcodina", "Sporozoa", "Flagellates"], correct: 2},
+    {q: "What concept of biosphere is associated with biogeocenosis?", options: ["Concept of biogeocenotype", "Cybernetic concept", "Biogeochemical concept", "Socio-economic concept"], correct: 0},
+    {q: "What vitamins are synthesized in human skin under ultraviolet radiation?", options: ["Vitamin C", "Vitamin A", "Vitamin B", "Vitamin D"], correct: 3},
+    {q: "What is it like to live free of food waste?", options: ["Sinoikia", "Parasitism", "Mutualism", "Commensalism"], correct: 3},
+    {q: "When was peroxisome described as separate structure in science?", options: ["1968s at first", "1870s at first", "in the early 1960s", "in the early 1970s"], correct: 2},
+    {q: "Identify spreader of Chagas disease?", options: ["Leishmania tropica", "Triatoma contamination", "Trypanosoma cruzi", "Leishmania donovani"], correct: 1},
+    {q: "Find Latin name for flagella?", options: ["Ciliates (Ciliophora)", "Flagellata", "Sarcodina", "Sporozoa"], correct: 1},
+    {q: "What structures are involved in protein biosynthesis?", options: ["Tubulin proteins, RNA", "Peptides, RNA", "DNA, RNA, amino acid", "Transfer RNA"], correct: 2},
+    {q: "In most simple animals, body membrane consists of proteins and fats?", options: ["Pectin", "Cellulose", "Pellicle", "Cuticle"], correct: 2},
+    {q: "Which geological layer is Earth's aquifer including oceans and seas?", options: ["Troposphere", "Atmosphere", "Hydrosphere", "Lithosphere"], correct: 2},
+    {q: "What doctrine of change takes place in nature and society?", options: ["Biology", "Device", "Biosphere", "Evolution"], correct: 3},
+    {q: "How is protein biosynthesis regulated in cell?", options: ["Inhibitor, suppressor, suppression", "Inhibitor, suppressor", "repression, inhibition", "Repression, suppression, Inhibitor, suppressor"], correct: 2},
+    {q: "What is sum of living organisms in certain geographic area?", options: ["Biotope", "Biosphere", "Biogeocenosis", "Biocenosis"], correct: 3},
+    {q: "Identify main functions of ecosystems?", options: ["Periodic metabolism and energy flow", "Biotic cycle", "Nitrogen cycle", "Carbon cycle"], correct: 0},
+    {q: "Which period of genetics begins in 1900 when three scientists rediscover laws of heredity?", options: ["Neoclassicism", "Synthetic", "Evolution", "Classic period"], correct: 3},
+    {q: "According to which hypothesis do chloroplast, mitochondria, nucleus have double membrane?", options: ["Deviation", "Intussusception", "Symbiosis", "Immigration"], correct: 1},
+    {q: "What function where organisms carry out nutrition, respiration, reproduction?", options: ["Concentration function", "Biochemical functions", "Gas exchange function", "Redox function"], correct: 1},
+    {q: "What are chromosomes of same shape and size called?", options: ["Haploid", "Hetrological", "Centromeric", "Homologous"], correct: 3},
+    {q: "What does mutually beneficial partnership mean?", options: ["Commensalism", "Sinoikia", "Mutualism", "Parasitism"], correct: 2},
+    {q: "Which scientist coined terms 'gene', 'genotype' and 'phenotype'?", options: ["O. Avery In 1909", "V. Johansen In 1909", "SGLevit In 1909", "A. Korenberg In 1909"], correct: 1},
+    {q: "Which proteins are completely absorbed into the membrane layer?", options: ["Semi-integral proteins", "endopheric", "Integral proteins", "Peripheral"], correct: 2},
+    {q: "Find characteristic of law of gamete purity.", options: ["One character completely dominates", "Gametes have only one of allelic genes", "The organism is homozygous", "The genotype consists of same allele"], correct: 1},
+    {q: "How long does telophase last?", options: ["4-25 min", "6-40 min", "9-30 min", "10-100 min"], correct: 2},
+    {q: "What is Latin name for arthropods?", options: ["Chordata", "Echinoderms", "Coelenterata", "Arthropoda"], correct: 3},
+    {q: "What are genetic factors isolated from chromosomes capable of autonomous reproduction?", options: ["Retrotransposon", "Plasmids", "Transposon", "Autonomous plasmid"], correct: 1},
+    {q: "What factors are sum of inorganic natural conditions including soil and climate?", options: ["Biotic", "Anthropogenic", "Abiotic", "Ecological"], correct: 2},
+    {q: "What regularly maintains acid-base balance in cell at certain level?", options: ["Core", "Plasmolemma", "Peroxisome", "Centrosome"], correct: 1},
+    {q: "What method is used to study production of traits by genes during individual development?", options: ["Immunogenetics", "Ontogenetic", "Hybridization", "Cytogenetic"], correct: 1},
+    {q: "In which member of chains do trypanosomes live and develop for 5-15 days?", options: ["In heart", "In stomach", "In liver", "In back of intestine"], correct: 3},
+    {q: "Which groups are divided according to period of interaction between host and parasite?", options: ["Mono and polyphagous", "Ectoparasite, endoparasite", "Temporary and permanent", "Active and inactive"], correct: 2},
+    {q: "Which scientist coined term 'plasmids'?", options: ["In 1889 R. Altmann", "Avery in 1944", "1928 Griffith", "Lederberg in 1952"], correct: 3},
+    {q: "Identify genetic diseases associated with sex X chromosome.", options: ["Hemophilia, syndactyly", "Microcephaly, phenylketonuria", "Hemophilia, color blindness", "Albinism, color blindness"], correct: 2},
+    {q: "What groups of parasites are divided depending on location in host body?", options: ["Mono and polyphagous", "Ectoparasite, endoparasite", "Temporary permanent", "Active and passive"], correct: 1},
+    {q: "Find example of mutualism?", options: ["Oral and intestinal amoebas", "Iskabtopar living in rodent nest", "E. coli bacteria in humans", "Bent head worm, schistosomiasis"], correct: 2},
+    {q: "System including community of organisms and abiotic factors in territory?", options: ["Biocenosis", "Biogeocenosis", "Biosphere", "Biotope"], correct: 1},
+    {q: "Which scientist first identified the virus?", options: ["J. Purkinye in 1839", "D.I. Ivanovsky in 1892", "Flemming in 1842", "R. Brown in 1831"], correct: 1},
+    {q: "What method is used to study influence of certain factors on organism?", options: ["Experimental methods", "Dahl method", "Methodology of environmental experiments", "Mathematical modeling method"], correct: 2},
+    {q: "Dominance of one allelic gene over another is called:", options: ["Polymer", "Additional", "Pleiotropy", "Epistasis"], correct: 3},
+    {q: "What diseases are caused by bacteria, rickettsia, viruses, fungi?", options: ["Infectious", "Inactive", "Temporary", "Constant"], correct: 0},
+    {q: "At what stage of interphase does number of cell centers double?", options: ["After synthesis (G2)", "Prophase", "During synthesis (S)", "Before synthesis (G1)"], correct: 2},
+    {q: "What are species with separate habitats called?", options: ["Genetic species", "Allatropic species", "Population types", "Sympathetic species"], correct: 1},
+    {q: "Which organisms have broad ecological significance?", options: ["Edaphotope", "Stenotop", "Climate", "Euritops"], correct: 3},
+    {q: "What is biological significance of mitosis? (1-Two daughter cells form, 2-Chromosomes similar, 3-Even distribution)", options: ["1.3", "1.2", "1,2,3", "2.3"], correct: 2},
+    {q: "What percentage of cell mass is made up of H, C, O, N?", options: ["98%", "97%", "96%", "95%"], correct: 0},
+    {q: "At what stage of prophase I do chromosome strands form thin strands?", options: ["Zygote", "Leptotena", "Diplotena", "Pachytena"], correct: 1},
+    {q: "What do you mean by environment?", options: ["A set of elements that affect body", "Limiting Factors", "The limit of optimism of organisms", "The limit of resistance of organisms"], correct: 0},
+    {q: "What groups can vector-borne diseases be divided into?", options: ["Active, inactive", "Temporary permanent", "Mono and polyphagous", "Obligate and facultative"], correct: 3},
+    {q: "What layer do peripheral proteins form?", options: ["Forms a denser and thicker layer", "Forms a muscle layer", "Forms a biomolecular layer", "Does not form a continuous layer"], correct: 3},
+    {q: "What species are called species that arose from increase/decrease in chromosome number?", options: ["Allopolyploid", "Aneuploidy", "Autopolyploid", "Anupolyploidy"], correct: 1},
+    {q: "Which scientist was the first to study animals, identify species, classify them, and put forward ideas of development?", options: ["A. Levenguk, 510 species", "R. Virchow, 500 species", "Aristotle, 510 species", "Darwin, 500 species"], correct: 2},
+    {q: "Which scientist introduced term 'evolution' into science and in what year?", options: ["A. Sturtevant, 1902", "C. Bonnet, 1762", "Darwin, 1859", "Hardy, 1908"], correct: 1},
+    {q: "Which cell consists of cytoplasm and nucleus, each cell is surrounded by a plasma membrane?", options: ["Blue-green algae", "bacterial cell", "Eukaryotic cell", "Prokaryotic cell"], correct: 2},
+    {q: "Form of antagonism where food bond kills prey and uses it?", options: ["Sinoikia", "Mutualism", "Predation", "Parasitism"], correct: 2},
+    {q: "Modifier genes affect:", options: ["Unilateral effect of allelic and non-allelic genes", "The influence of genes that are not alleles", "Dominance of one dominant gene over another", "Genes that increase or decrease activity of major genes"], correct: 3},
+    {q: "What are the different membrane proteins of eukaryotes?", options: ["Integral, semi-integral and peripheral", "Integral, semi-integral, peripheral, endopheric", "Integral and peripheral", "Integral, semi-integral"], correct: 0},
+    {q: "Differences in chromosome shape depending on centromere location?", options: ["3: metacentric, submetacentric and acrocentric", "4: metacentric, submetacentric, telomeric and telocentric", "2: metacentric and acrocentric", "3: metacentric, telomeric and acrocentric"], correct: 0},
+    {q: "How does transfer of genetic factor from one bacterial cell to another occur?", options: ["Transformation", "Replication", "Conjugation", "Transduction"], correct: 2},
+    {q: "How many chemical elements are in cell?", options: ["60", "70", "50", "80"], correct: 1},
+    {q: "What is result of natural selection?", options: ["cell", "Strain", "organism", "view"], correct: 3},
+    {q: "What is Latin name for echinoderms?", options: ["Platyhelminthes", "Echinodermata", "Annelids", "Nemathelminthes"], correct: 1},
+    {q: "What is Latin name for flatworms?", options: ["Echinoderms", "Platyhelminthes", "Coelenterata", "Chordata"], correct: 1},
+    {q: "What diseases are caused by parasites?", options: ["Constant", "Temporary", "Active", "Invasive"], correct: 3},
+    {q: "Indicate properties of prophase period. (1-Chromosomes twist, 2-Nuclear envelope dissolves, 3-Mitotic threads form)", options: ["1,2,3", "2.3", "1.3", "1.2"], correct: 0},
+    {q: "Heterotrophic organisms are divided into two groups:", options: ["Phototrophic, chemotrophic", "Saprophyte, heterotroph", "Autotroph, mixotroph", "Saprophyte, parasite"], correct: 3},
+    {q: "Which cells have the most mitochondria and inclusions?", options: ["In blood cells", "In spleen cells", "In liver cells", "In living cells"], correct: 2},
+    {q: "What adaptive type is formed in cold climates?", options: ["Tropical adaptive type", "Temperate adaptive type", "Arctic adaptive type", "Desert adaptive type"], correct: 2},
+    {q: "Which geological layer contains 78.08% nitrogen and 20.95% oxygen?", options: ["Atmosphere", "Lithosphere", "Hydrosphere", "Troposphere"], correct: 3},
+    {q: "In what year was Lamarck's Philosophy of Zoology published?", options: ["1809", "1812", "1801", "1814"], correct: 0},
+    {q: "Show class representatives of Sporozoa?", options: ["Tryponosoma, leishmaniasis", "Giardia, toxoplasmosis", "Malarial plasmodium, toxoplasma", "Malarial plasmodium, tryponosoma"], correct: 2},
+    {q: "What factors include all living organisms - microorganisms, plants?", options: ["Biotic", "Abiotic", "Ecological", "Anthropogenic"], correct: 0},
+    {q: "What is non-helical, uncompressed part of chromosome called?", options: ["Cytoskeleton", "Chromatin", "Centriole", "Centromere"], correct: 1},
+    {q: "Identify slow-onset disease caused by bacteria.", options: ["Tuberculosis", "Plague", "AIDS", "Hepatitis"], correct: 0},
+    {q: "What type of inclusions contain various enzymes and is product of glandular cell activity?", options: ["Trophic", "Pigmentary", "excretor", "Secret"], correct: 3},
+    {q: "Specify Latin name of chordates", options: ["Nemathelminthes", "Annelids", "Coelenterata", "Chordata"], correct: 3},
+    {q: "What parasitism is accidental condition where organism accidentally enters host?", options: ["False", "Optional", "Real", "Bond"], correct: 0},
+    {q: "Which method based on combination of cytological and genetic methods?", options: ["Ontogenetic", "Molecular genetics", "Cytogenetic", "Hybridization"], correct: 2},
+    {q: "Function of which organ aims at concentrating, dehydrating secretion products for cell release?", options: ["Golgi complex", "Mitochondria", "Lysosome", "Endoplasmic reticulum"], correct: 0},
+    {q: "What is name of blue pigment in blue-green algae cell?", options: ["Xanthophyll", "Carotene", "Phycotian", "Chlorophyll"], correct: 2},
+    {q: "In which cells is Golgi apparatus (complex) most developed?", options: ["In liver cells", "In glandular cells", "In blood cells", "In spleen cells"], correct: 1},
+    {q: "Who was the first to define the nucleus?", options: ["R. Brown in 1831", "N. Grew in 1671", "J. Purkinye in 1839", "A. Leeuwenhoek in 1680"], correct: 0},
+    {q: "Endoparasites are", options: ["Parasites on external surface", "Those who live inside host body", "Parasitizes outside muscles", "Parasites on outside of stomach"], correct: 1},
+    {q: "What percentage of organism cell is made up of organic matter?", options: ["50-60%", "40-50%", "20-30%", "30-40%"], correct: 2},
+    {q: "Determine characteristics of anaphase. (1-Centromeres divide, 2-Chromatids divide, 3-2n4c, 4-Each pole has same chromosomes)", options: ["1,3,4", "1,2,3", "1,2,4", "1.3"], correct: 2},
+    {q: "By pinocytosis and phagocytosis, substances entering cell are digested. This is", options: ["Peroxisome", "Heterophagosome", "Autophagosome", "Heterolysosome"], correct: 3},
+    {q: "What is the diameter of most eukaryotic cells?", options: ["10-100 µm", "50-1000 µm", "10-100000 microns", "100-1000 microns"], correct: 0},
+    {q: "What adaptive type is formed in hot and humid climate?", options: ["Arctic adaptive type", "Medium adaptive type", "Desert adaptive type", "Tropical adaptive type"], correct: 3},
+    {q: "What substances enhance formation and renewal of structural parts?", options: ["Anabolic steroids", "Deviation", "Replication", "Senogenesis"], correct: 0},
+    {q: "Who wrote 'Animal Parts'?", options: ["Theophrastus", "Fales", "Aristotle", "Hippocrates"], correct: 2},
+    {q: "What are different chromosomes in men and women called?", options: ["Heterozogy", "Hemizogotes", "Sex chromosomes", "Autosomes"], correct: 2},
+    {q: "What bond exists in water molecule?", options: ["Hydrogen bond", "Ionic bond", "Covalent bond", "Metal bond"], correct: 0},
+    {q: "Which scientists invented chromosome theory? (1-Morgan, 2-Bridges, 3-Sturtevant, 4-Meller, 5-Mendel, 6-Nadson, 7-de-Frieze)", options: ["3,4,6,7", "1,2,3,4", "2,4,5,6", "4,5,6,7"], correct: 1},
+    {q: "What concept studies organization and control of matter transformation?", options: ["Cybernetic concept", "Socio-economic concept", "Concept of biogeocenotype", "Biogeochemical concept"], correct: 0},
+    {q: "What does medical arachnoentomology study?", options: ["Simple animals and insects causing diseases", "Worms, simple animals and methods of control", "Spiders and insects that cause and spread diseases", "Spiders and worms causing diseases"], correct: 2},
+    {q: "In which model of cell membrane structure are protein globules evenly distributed throughout fat layer?", options: ["Devson and Daniel model", "Cell model", "Model 'Mosaic'", "Mathematical model"], correct: 0},
+    {q: "How many species of parasites are currently known?", options: ["About 600", "About 60,000", "About 6000", "About 60"], correct: 1},
+    {q: "What is formed from structure of chromatin?", options: ["Chromosome", "Centromere", "Chromonema", "Chromatid"], correct: 0},
+    {q: "Who proposed the 'mosaic' model of cell membrane structure?", options: ["In 1892, Singer and D.I. Ivanovsky", "In 1842 Boveri and Flemming", "In 1972 Devson and Daniel", "In 1972, Singer and Nicholson"], correct: 3},
+    {q: "In ontogenesis, brief repetition of phylogeny is called....", options: ["Law of homologous series", "Law of similarity of embryos", "Biogenetically m law", "Cell theory"], correct: 2},
+    {q: "Which scientists studied transmission of genes from generation to generation on chromosomes?", options: ["Morgan and his students J. Muller and A.G. Sturtevant", "Avery, McLeod and McCarthy", "Friedrich Miescher, Astaurov", "De Vries, Cermak, Karl Correns"], correct: 0},
+    {q: "What substances make up shell of most simple animals?", options: ["Carbohydrates and fats", "Just protein", "Proteins and carbohydrates", "Proteins and fats (lipoproteins)"], correct: 3},
+    {q: "What is catabolism?", options: ["Assimilation", "Endoergonic", "Plastic exchange", "Exoergonic"], correct: 3},
+    {q: "Who first used artificial parthenogenesis in rearing silkworms?", options: ["A.D. Tikhomirov (1885)", "Nicholson (1972)", "A. Astaurov (1937)", "Flemming (1842)"], correct: 0},
+    {q: "Who created doctrine of modern microevolution?", options: ["Darwin, Morgan", "R. Virchow, Bonn", "Dobryansky, Timofeev-Resovsky", "Boveri and Flemming"], correct: 2},
+    {q: "Specify ring amino acids.", options: ["Proline, lysine", "Valin, Sistine", "Tyrosine, Tryptophan", "Lysine, Arginine"], correct: 2},
+    {q: "What is macroevolution?", options: ["It is mutational process creating material for diversity", "This is long-term change in gene pool", "It occurs within populations and leads to stratification", "Leads to diversity of systematic units over species"], correct: 3},
+    {q: "According to E.N. Pavlovsky, diseases transmitted by blood-sucking arthropods?", options: ["Pollution", "Reinvasion", "Graft", "Transmission"], correct: 3},
+    {q: "What useful adaptations arise at certain stages of development?", options: ["Aromorphosis", "Morphosiological regression", "Senogenesis", "Idiomatic adaptation"], correct: 2},
+    {q: "Name scientist who called science of heredity and variability genetics.", options: ["In 1906 V. Johansen", "In 1908, Hugo de Vriese", "In 1908 E. Wilson", "In 1906 W. Betson"], correct: 3},
+    {q: "This is called when parasite leaves host and reinfects itself?", options: ["Graft", "Reinvasion", "Auto invasion", "Autoreinfection"], correct: 3},
+    {q: "What type of reproduction is multiple reproduction?", options: ["Rescue", "Meiosis", "Schizogony", "Divide into 2 simple"], correct: 2},
+    {q: "Is the internal environment of a cell different from the environment of a cell?", options: ["Similar", "Is different", "It does not matter", "Is not different"], correct: 1},
+    {q: "Natural source of African sleeping sickness is gazelles, transmitter is?", options: ["Human lice, human roundworms", "Mosquitoes, cat sucker liverworts", "Tse-tse fly (Glossina palpalis)", "Bent head worm, schistosomiasis"], correct: 2},
+    {q: "What is name for transmission through feces of carriers?", options: ["Reinvasion", "Transmissible", "Graft", "contamination"], correct: 3},
+    {q: "What are those that feed on dead organic matter?", options: ["Parasites", "Phototrophs", "Chemotrophs", "Saprophytes"], correct: 3},
+    {q: "Indicate composition of ecosystems. (1-abiotic factors, 2-Autotrophs, 3-Heterotrophs, 4-destructor)", options: ["1,2,3,4", "1,3,4", "1,2,4", "2,3,4"], correct: 0},
+    {q: "Indicate Latin name of protozoa", options: ["Protozoa", "Coelenterata", "Nemathelminthes", "Annelids"], correct: 0},
+    {q: "What term means group of parasites of different species in same organism?", options: ["Zoocenosis", "Biogeocenosis", "Biocenosis", "Parasitocenosis"], correct: 3},
+    {q: "Which scientist founded genetics?", options: ["1866 G. Mendel", "1920 Koltsov", "1869 Johann Friedrich Miescher", "1920 M.E.Labashev"], correct: 0},
+    {q: "Identify eukaryotic organisms.", options: ["Bacteriophage, tulip", "Mushroom, oscillatorium, amoeba", "Spirogyra, yeast mushrooms", "Nostoc, amoeba"], correct: 2},
+    {q: "How do nucleotides join together to form DNA or RNA chain?", options: ["Disulfide bond", "Phosphoric acid", "Open chain", "Phosphodiester bond"], correct: 3},
+    {q: "What is total biomass of land plant biomass?", options: ["78%", "99%", "92%", "93%"], correct: 1},
+    {q: "Which scientist observed phenomenon of staged alleles using X-rays on Drosophila?", options: ["S. Benzer In 1929", "Astanov in 1929", "A. Korenberg In 1929", "A.S. Serebrovsky in 1929"], correct: 3},
+    {q: "Which scientists discovered helical shape of DNA?", options: ["1900 De Vries, Cermak, Karl Correns", "1944 Avery, McLeod, McCarthy", "1869 Friedrich Miescher, Astaurov", "1953 Watson and Crick"], correct: 3},
+    {q: "What idea of biosphere associated with complex changes from photosynthesis?", options: ["Cybernetic concept", "Socio-economic concept", "Biogeochemical concept", "Concept of biogeocenotype"], correct: 2},
+    {q: "Clams, Latin name for shellfish?", options: ["Platyhelminthes", "Nemathelminthes", "Chordata", "Mollusca"], correct: 3},
+    {q: "What science studies patterns of emergence of anthropoecological systems?", options: ["Human ecology", "Anthropology", "Geography", "Ecology"], correct: 0},
+    {q: "What disease damages central nervous system with sleep changes?", options: ["Leishmania tropica", "Trypanosoma gambiense", "Leishmania donovani", "Trypanosoma cruzi"], correct: 1},
+    {q: "Which decomposition occurs in anoxic phase and occurs in cytoplasm?", options: ["Basic decomposition", "Glycolysis", "Preparation", "Aerobic decomposition"], correct: 1},
+    {q: "Who first came up with information about the cell?", options: ["I.V. Michurin, Morgan", "R. Virchow, Lamarck", "R. Guk, A. Levenguk", "N. I. Vavilov, Darwin"], correct: 2},
+    {q: "Identify causative agent of African sleeping sickness?", options: ["Leishmania donovani", "Trypanosoma gambiense", "Leishmania tropica", "Trypanosoma cruzi"], correct: 1},
+    {q: "What is function of cell wall in plants?", options: ["Control of cell proliferation", "Control of cell movement", "Protection, turgor", "Control of cell division"], correct: 2},
+    {q: "What organisms cannot cause disease?", options: ["Pathogenic organism", "mixotrophic organisms", "Non pathogenic", "heterotrophic organisms"], correct: 2},
+    {q: "Which German scientists created the cell theory?", options: ["A. Leeuwenhoek and Schwann in 1849", "Schleiden and Grew in 1839", "J. Purkin and Schleiden in 1849", "Schleiden and Schwann in 1839"], correct: 3},
+    {q: "What is called reinfection of disease?", options: ["Graft", "Auto invasion", "Reinfestation", "Autoreinvasion"], correct: 2},
+    {q: "What function regulates composition of gases in atmosphere?", options: ["Biochemical functions", "Concentration function", "Redox function", "Gas exchange function"], correct: 3},
+    {q: "What are names of proteins soluble in pure distilled water?", options: ["Globulins", "Renaturation", "Denaturation", "Albumin"], correct: 3},
+    {q: "Determine main directions of evolution.", options: ["Aromorphosis, idioadaptation, degeneration", "Aromorphosis, genetic change, adaptation", "Idioadaptation, adaptation, disguise", "Degeneration, disguise"], correct: 0},
+    {q: "What are unequal-armed chromosomes called?", options: ["Submetacentric", "Metacentric", "Acrocentric", "satellite new"], correct: 0},
+    {q: "Define the function of the plasma membrane of eukaryotes. (1- Separates cell from environment, 2- Transports water/ions/substances, 3- Releases unnecessary substances)", options: ["1.3", "2.3", "1,2,3", "1.2"], correct: 2},
+    {q: "At what level of life does biogenic migration of substances occur?", options: ["Biogeosinosis", "Molecule", "Ontogenetic", "Biosphere"], correct: 3},
+    {q: "What is the thickness of the plasma (cytoplasmic) membrane of eukaryotes?", options: ["50-60 nm", "7-12 nm", "10-100 nm", "20-24 nm"], correct: 1},
+    {q: "Find parasites that are not ectoparasites?", options: ["flies", "Bed bugs", "Lice", "Flukes"], correct: 3},
+    {q: "What factors are involved in human activity?", options: ["Biotic", "Abiotic", "Anthropogenic", "Ecological"], correct: 2},
+    {q: "What is genetic variation?", options: ["Variability associated with changes in genotype", "Variability not associated with change under environment", "To variability not associated with genotype and persists", "Towards variability from crossover during meiosis"], correct: 0},
+    {q: "Variation in population number is important evolution. Who noticed this and called it?", options: ["Lamarck 'Philosophy of Zoology'", "Aristotle 'History of Animals'", "Virchow's book 'Cellular Pathology'", "Chetverikov S.S. 'Waves of Life'"], correct: 3},
+    {q: "Indicate organisms that actively penetrate host body?", options: ["Human lice, human roundworms", "Tsetsi mosquito (Glossina palpalis)", "Mosquitoes, cat sucker liverworts", "crooked head, schistosomiasis"], correct: 3},
+    {q: "What are main features of life?", options: ["Self-renewal, growth", "Self-education, development, reproduction", "Self-renewal, self-reproduction, self-regulation", "Self-government, growth and development, reproduction"], correct: 2},
+    {q: "What is main task of science of noogenics?", options: ["correction of violations in relationship", "increase diversity of life", "only protection", "development of new types"], correct: 0},
+    {q: "Who was first to determine variability of heredity?", options: ["1920 M.E.Labashev", "1869 Friedrich Miescher", "1901 De Vries", "1920 Koltsov"], correct: 2},
+    {q: "Specify methods for studying ecology?", options: ["Ecological experiments, mathematical modeling", "Field, mathematical modeling, experimental", "Field, environmental experiments, experimental", "Field, environmental experiments, mathematical modeling"], correct: 3},
+    {q: "Which scientist determined adenine corresponds to thymine and guanine to cytosine in DNA?", options: ["1928 Griffith", "1952 Lederberg", "In 1889 R. Altmann", "In 1950 E. Chargaff"], correct: 3},
+    {q: "Find Latin name for sarcoids?", options: ["Sporozoa", "Sarcodina", "Ciliates (Ciliophora)", "Flagellates"], correct: 1},
+    {q: "Who first introduced term 'population' into genetics?", options: ["Boveri in 1842", "W. Johansen in 1903", "J. Purkinye in 1839", "R. Brown in 1831"], correct: 1},
+    {q: "In monohybrid hybridization, in what ratios is F2 subjected to genotyping?", options: ["3:1", "2:1", "1:2:1", "1:1"], correct: 2},
+    {q: "Find blue-green algae used for food.", options: ["Hara", "Nitella", "Nostok", "Chroococcus"], correct: 2},
+    {q: "What are periods of prophase 1?", options: ["Leptotene, zygotene, pachytene, diplotene, diakinesis", "Liptotene, zygotene, pachytene, diplotene, interkinesis, diakinesis", "Liptotene, zygotene, paxiten, interkinesis", "Liptotene, zygotene, diplotene, diakinesis"], correct: 0},
+    {q: "What is rental property called?", options: ["Mutualism", "Sinoikia", "Commensalism", "Parasitism"], correct: 1},
+    {q: "If egg or larva continues to develop inside host without leaving?", options: ["Autoreinvasion", "Graft", "Autoinvasion", "Reinvasion"], correct: 2},
+    {q: "Which organelle appears as stack of rolls, system of tubes with bubbles at ends under electron microscope?", options: ["Mitochondria", "Lysosome", "Golgi apparatus", "Endoplasmic reticulum"], correct: 2},
+    {q: "Types of DNA replication indicated by G.Sten in 1957.", options: ["Conservative, semi-conservative", "Conservative, semi-conservative, dispersive", "Conservative, dispersive", "Semi-conservative, dispersive"], correct: 1},
+    {q: "How much (%) protein is contained in cotton fiber?", options: ["95%", "96%", "94%", "93%"], correct: 0},
+    {q: "Identify anthropozoonotic diseases?", options: ["Plague, leishmaniasis", "Avian fever, trichomoniasis, amoebiasis", "Giardiasis, hymenolipidosis", "Trichomonodosis, amyobiosis"], correct: 0},
+    {q: "What elements ensure passage of substances through cell membrane?", options: ["Na, K", "Fe,Na", "Cl, Mg", "K, Fe"], correct: 0},
+    {q: "What is the concentration of Na+ around red blood cell and K+ ions in cytoplasm?", options: ["Na concentration + and K + high", "Na+ concentration is low and K+ high", "Na+ concentration is high and K+ low", "Na+ and K+ concentrations are low"], correct: 0},
+    {q: "Indicate laws of inheritance of traits. (1-Homogeneity, 2-Separation, 3-Independent distribution, 4-Chargaff)", options: ["1,2,3", "2,3,4", "1,2,4", "1,3,4"], correct: 0},
+    {q: "Stages of protein biosynthesis?", options: ["Increased amino acid activity, initiation", "Initiation, extension, termination", "Increased amino acid activity, elongation, termination", "Increased amino acid activity, initiation, elongation, termination"], correct: 3},
+    {q: "Identify tiny parts of gene in modern gene theory.", options: ["Systron, Mouton, recon", "Sistron, scout", "Genes, chromosomes", "Genes, chromosomes, genomes"], correct: 0},
+    {q: "What are microtubules made of?", options: ["From a trace element", "From the protein tubulin", "From carbohydrates", "From the sebaceous glands"], correct: 1},
+    {q: "What is senogenesis?", options: ["Historical adaptation", "Postembryonic adaptation", "Embryonic adaptation", "Aromorphosis"], correct: 2},
+    {q: "According to relationships of organisms, which have forms like mutualism, synocytism?", options: ["Neutralism", "Symbiosis", "Parasitism", "Antibiosis"], correct: 1},
+    {q: "Find organism that is not endoparasite?", options: ["Suckers", "Trixinella", "Toxoplasma", "Bed bugs"], correct: 3},
+    {q: "Death of parasites from sucking blood through contaminated mouthparts?", options: ["Pollution", "Reinvasion", "Transmissible", "Inoculation"], correct: 3},
+    {q: "According to which model does membrane consist of mobile mosaic with proteins penetrating fat layer?", options: ["Mathematical model", "Devson and Daniel model", "Mosaic model", "Cell model"], correct: 2},
+    {q: "Ectoparasites are:", options: ["Parasitizes inside muscles", "Parasites on external surface of host body", "Parasites inside stomach", "Those who live in body of master"], correct: 1},
+    {q: "What type of inclusions performs excretory function?", options: ["Pigmentary", "Trophic", "Secretary", "Excretory"], correct: 3},
+    {q: "Which scientist discovered nucleic acid?", options: ["1869 Johann Friedrich Miescher", "1920 M.E.Labashev", "1866 G. Mendel", "1920 Koltsov"], correct: 0},
+    {q: "Characteristics of outer mitochondrial membrane. (1-smooth, 2-wrinkled, 3-large pores, 4-small pores, 5-ADP)", options: ["2,3,5", "1,3,4,5", "1,3,5", "2,4,5"], correct: 2},
+    {q: "Scientist who proved transformation of strain R into strain S depends on DNA?", options: ["F. Griffith", "Avery", "G. Georgiev", "Bonne"], correct: 1},
+    {q: "Determine the diameter of ribosomes", options: ["35 nm", "45 nm", "25 nm", "15 nm"], correct: 3},
+    {q: "What is pinocytosis?", options: ["Passage of water and substances dissolved in water through membrane", "Absorption of solid particles through membrane", "Type of cell division", "Pinos-love, cytoz-cell"], correct: 0},
+    {q: "In which organs is the smooth endoplasmic reticulum developed?", options: ["Pancreas, some glands in digestive tract", "Stomach, liver, kidneys", "In the liver", "Pancreas, liver, intestines"], correct: 0},
+    {q: "What set of cations is present in inner mitochondrial fluid granules (electron-dense round granule)?", options: ["Magnesium, sodium", "Magnesium, manganese", "Potassium, calcium", "Calcium, magnesium"], correct: 3},
+    {q: "What disease has 45 chromosomes?", options: ["Klinefelter syndrome", "Down", "Microcephaly", "Shershevsky-Turner syndrome"], correct: 3},
+    {q: "Identification of prokaryotic organisms. (1-TB bacillus, 2-yeast, 3-chlorococcus, 4-chlorella, 5-nostoc, 6-Chlorella, 7-oscillatorium)", options: ["2,3,5,7", "1,3,6,7", "1,2,3,4", "1,3,5,7"], correct: 3},
+    {q: "Which scientists officially confirmed origin of G. Mendel's work?", options: ["1869 Friedrich Miescher, De Vries, Cermak", "1905 Bateson, De Vries, Cermak", "1900 De Vries, Chermak, Astaurov", "1900 De Vries, Cermak, Karl Correns"], correct: 3},
+    {q: "Which scientist expressed first ideas in embryology?", options: ["Empedocles", "Lamarck", "Theophrastus", "Aristotle"], correct: 3},
+    {q: "According to which scientist: biosphere is distribution of life with organisms?", options: ["E. Zyus", "Le Roy", "V.I. Vernadsky", "V.V. Dokuchaev"], correct: 2},
+    {q: "Find Latin name of ciliate?", options: ["Infusoria", "Sporozoa", "Flagellates", "Sarcodina"], correct: 0},
+    {q: "What is polyploidy?", options: ["Chromosome separation", "Chromosome multiplication", "Chromosome polarization", "Chromosome shortening"], correct: 1},
+    {q: "How are ribosomes structured?", options: ["small, round electron-dense structures of same size", "small, round, electron-dense structure of varying sizes", "large round electron-dense structure of same size", "very small, elongated, diffuse structure of same size"], correct: 0},
+    {q: "According to this scientist, gene consists of very small parts: cistron, mouton, recon.", options: ["E. Chargaff", "A. Korenberg", "Astaunov", "S. Benzer"], correct: 3},
+    {q: "Who is founder of medical genetics in CIS countries?", options: ["A. Korenberg", "S.N. Davidenkov", "O. Avery", "S.Zh.Levit"], correct: 3},
+    {q: "What is Latin name for ringworm?", options: ["Arthropods", "Annelida", "Nemathelminthes", "Echinoderms"], correct: 1},
+    {q: "What happens when phosphoric acid residue combines with nucleoside?", options: ["Nucleotide", "Protein", "Nucleoside", "Nucleic acid"], correct: 0},
+    {q: "How many different levels of genetic material are in eukaryotic organisms?", options: ["1. Gene level; 2. chromosomal; 3. Genomic (genotypic) level", "1. Chromosomal level; 2. Genomic (genotypic) level", "1. gene level; 2. Genomic (genotypic) level", "1. gene level; 2. Chromosome level"], correct: 0},
+    {q: "Name gene units", options: ["Mouton, recon, cistron", "Cistron, operon, promoter", "Cistron, operon, operator", "Operon, promoter"], correct: 0},
+    {q: "What does amount of crossing over mean?", options: ["Number of organisms from crossover", "Are genes dominant or recessive?", "Distance between genes", "Organism aggregation group"], correct: 2},
+    {q: "How many species are included in phylum Protozoa?", options: ["About 4000 species", "About 30,000 species", "About 40,000 species", "About 3000 species"], correct: 1},
+    {q: "What is basis of biological evolution?", options: ["natural selection", "Fight for survival", "Individual development", "Artificial selection"], correct: 0},
+    {q: "What groups are persistent parasites divided into? (1-Stationary, 2-Periodic, 3-Laural, 4-Imaginal)", options: ["3,4", "1,2,3,4", "1,3,4", "2,3,4"], correct: 1},
+    {q: "Which geological layer is solid layer of earth, 2-5 km deep?", options: ["Lithosphere", "Atmosphere", "Hydrosphere", "Troposphere"], correct: 0},
+    {q: "Which geological layer makes up 71% of our planet?", options: ["Troposphere", "Hydrosphere", "Atmosphere", "Lithosphere"], correct: 1},
+    {q: "What are different types of lysosomes?", options: ["Endogenous, exogenous", "Primary (inactive) and secondary", "Temporary permanent", "Digestive and enzymatic"], correct: 1},
+    {q: "Determine property inherent in inner membrane of mitochondria.", options: ["Extracting energy from chemicals via oxidative phosphorylation", "Redox enzymes forming lymph nodes, ensuring cellular respiration", "Redox enzymes producing hormones, ensuring cellular respiration", "Redox enzymes forming nodules, ensuring cellular respiration"], correct: 0},
+    {q: "What kind of disease of hands?", options: ["Polydactyly", "Acrology", "Syndactyly", "Microcephaly"], correct: 2},
+    {q: "Who coined term parasitocenosis?", options: ["K.I. Scriabin", "V.N. Beklemishev", "V.A. Dogel", "E.N. Pavlovsky"], correct: 3},
+    {q: "How many types of synergy form are available?", options: ["2 types: predation, parasitism", "2 types: Antibiosis, symbiosis", "2 types: endogenous, exogenous", "3 types: synocism, mutualism, commensalism"], correct: 3},
+    {q: "Which scientist was able to create artificial taxonomy of plants and animals?", options: ["J.B. Lamarck", "K. Linnaeus", "N.I.Vavilov", "Sechenov"], correct: 1},
+    {q: "How much water is in plant cell?", options: ["50%", "90%", "5%", "10%"], correct: 1},
+    {q: "What causes infectious diseases?", options: ["Animal parasites, spirochetes, rickettsia", "Simple animals, spirochetes, algae, amoebas", "Ungulates, spirochetes, bacteria", "Viruses, bacteria, spirochetes, rickettsia and fungi"], correct: 3},
+    {q: "Zoonoses are", options: ["Animal diseases only", "Diseases common in humans and animals", "Plant diseases only", "Monitoring disease in humans only"], correct: 0},
+    {q: "What method is used to study patterns of signs in organisms being intertwined?", options: ["Ontogenetic", "Hybridization", "Immunogenetics", "Cytogenetic"], correct: 1},
+    {q: "What does divergence of characters mean during evolution?", options: ["Degeneration", "Replication", "Convergence", "Divergence"], correct: 3},
+    {q: "What parasites spend most of lives in host body?", options: ["Temporary", "Inactive (passive)", "Constant", "Active"], correct: 2},
+    {q: "Indicate methods of transmission of pathogens?", options: ["Mono and polyphagous", "Inoculation, contamination", "Invasion and infestation", "Active, inactive"], correct: 1},
+    {q: "Which method allows to predict survival of ecosystem using computer?", options: ["Mathematical modeling method", "Experimental methods", "Dahl method", "Method of ecological experiments"], correct: 0},
+    {q: "According to interaction of organisms, which living organisms do not influence each other?", options: ["Antibiosis", "Neutralism", "Symbiosis", "Mutualism"], correct: 1},
+    {q: "Example of this is pollination of plants in different ways.", options: ["Aromorphosis", "Senogenesis", "Idioadaptation", "Degeneration"], correct: 2},
+    {q: "What type of carbohydrate in diet is stored as glycogen in liver and muscle cells?", options: ["Trophic", "Secretary", "excretor", "Pigmentary"], correct: 0},
+    {q: "Specify specific organelles?", options: ["Ribosomes, Golgi complex, lysosomes, peroxisomes, myofibrils, tonofibrils, neurofibrils", "Myofibrils, tonofibrils, neurofibrils, flagellum, eyelashes and marginal microvilli", "Mitochondria, intracellular network, ribosomes, lysosomes, cell center centrosome, peroxisome", "Mitochondria, Golgi complex, lysosomes, centrosome, micro tubes, flagellum, eyelashes"], correct: 1},
+    {q: "What is cell wall of bacteria called?", options: ["Cellulose fiber", "Murein", "Cellulose", "Pectin"], correct: 1},
+    {q: "What property of organisms is assimilated in different environments?", options: ["Environmental valency", "The limit of optimism", "Limiting factor", "Tensile strength"], correct: 0},
+    {q: "Species whose habitats merge or are completely compatible?", options: ["Allatropic species", "Population types", "Genetic species", "Sympathetic views"], correct: 3},
+    {q: "To which cytoplasmic system do microtubules and microfibrils belong?", options: ["Reproduction", "Additional", "Organoids", "Musculoskeletal"], correct: 3},
+    {q: "R. Virchow's statements about the cell?", options: ["The cell stores genetic information", "DNA plays important role in regulating cellular activity", "Functional cell block", "A cell is formed by division of an existing cell"], correct: 3},
+    {q: "What are organisms formed by mixing forms differing in three or more characteristics?", options: ["Poly hybrid", "Polymer", "Additional", "Diduragai"], correct: 0},
+    {q: "What functions does thick cuticle perform?", options: ["Oxygen transport", "Energy production", "Metabolism", "Protection and basic function"], correct: 3},
+    {q: "What organisms reproduce by parthenogenesis?", options: ["Female bees, crayfish", "All simple animals, chokers", "Butterflies, flies", "Small crustaceans, male bees"], correct: 3},
+    {q: "Which organelle is electron-dense substance with spherical vesicles of 0.5-0.8 µm diameter?", options: ["Mitochondria", "Lysosome", "Endoplasmic reticulum", "Golgi complex"], correct: 1},
+    {q: "What science develops measures to prevent environmental crises?", options: ["Anthropoecology", "Genetics", "Ecology", "Noogenics"], correct: 3},
+    {q: "When inherited, complementary genotype AaBB indicates what shape pumpkin fruit is?", options: ["Disc-shaped", "Triangle", "Round", "Long"], correct: 0},
+    {q: "Scientist who developed neurogenetics, determined heterogeneity of hereditary diseases?", options: ["O. Avery", "S.N. Davidenkov", "A. Korenberg", "SGLevit"], correct: 1},
+    {q: "Which diseases are hereditary?", options: ["Epilepsy, cretinism, hemophilia", "Plague, cancer, smallpox", "Tuberculosis, measles, smallpox", "Rickets, caries, dysentery"], correct: 0},
+    {q: "What are the different organelles?", options: ["Essential and unnecessary organelles", "General and specific organelles", "Temporary and permanent organoids", "Mono and poly organoids"], correct: 1},
+    {q: "When viewed through an electron microscope, the layers of the plasmalemma are determined", options: ["lipid double layer", "4; internal, external, middle, vascular", "It consists only of a dense, thicker 1 layer", "2; inner and outer are dense, thicker"], correct: 0},
+    {q: "What is main reserve and reason for emergence of adaptive types?", options: ["Population", "Heredity", "variability", "Mutation"], correct: 2},
+    {q: "How many amino acids are in hemoglobin protein chain?", options: ["143", "141", "142", "145"], correct: 1},
+    {q: "List amino acids without ring.", options: ["Leysine, Lysine", "Valine, Tyrosine", "Tyrosine, Proline", "Arginine, Tyrosine"], correct: 0},
+    {q: "Form of antagonism when one species uses another as food and habitat?", options: ["Predation", "Sinoikia", "Parasitism", "Mutualism"], correct: 2},
+    {q: "Which scientist first introduced concept of 'living matter'?", options: ["Le Roy", "V.V. Dokuchaev", "V.I. Vernadsky", "E. Zyus"], correct: 2},
+    {q: "What class of protozoa reproduces through schizogony?", options: ["Class of birds", "Type of chordates", "Class Sporozoa", "Insect class"], correct: 2},
+    {q: "How do substances pass through a membrane?", options: ["By road (using a carrier)", "Due to direct transport, motor transport and due to changes in membrane shape", "By changing the shape of the membrane (conformation)", "Through direct transport (without carriers)"], correct: 1},
+    {q: "What is name of any component of environment affecting living organisms?", options: ["Environmental factor", "Anthropogenic factor", "Biotic factor", "Abiotic factor"], correct: 0},
+  ]
+};
+
+// Export for use in HTML/JS applications
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = questionBank;
+}
+
+
+// ========== STATE ==========
+let userData = {};
+let currentQuestions = [];
+let currentQuestionIndex = 0;
+let answers = [];
+let timeRemaining = EXAM_DURATION;
+let timerInterval;
+let cameraStream;
+let warningCount = 0;
+let isSubmitting = false;
+
+// Face detection simulation
+let faceDetectionInterval;
+let facePosition = { x: 60, y: 40, width: 60, height: 70 };
+let faceDirection = { x: 1, y: 1 };
+let examStartTime;
+let fakeDetectionScheduled = false;
+
+// ========== SECURITY ==========
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+        (e.ctrlKey && e.key === 'u') || (e.ctrlKey && e.key === 'c')) {
+        e.preventDefault();
+        triggerWarning("Developer tools or copy attempt detected");
+    }
+});
+document.addEventListener('copy', e => {
+    e.preventDefault();
+    triggerWarning("Copy attempt detected");
+});
+document.addEventListener('cut', e => {
+    e.preventDefault();
+    triggerWarning("Cut attempt detected");
+});
+
+// ========== REGISTRATION ==========
+document.getElementById('registrationForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const name = document.getElementById('fullName').value.trim();
+    const email = document.getElementById('email').value.trim();
+    
+    if (!name || !email) {
+        alert('Please fill all fields');
+        return;
+    }
+
+    console.log('🟡 Starting email verification...');
+    console.log('Name:', name);
+    console.log('Email:', email);
+
+    // Show loading modal
+    document.getElementById('loadingModal').classList.add('active');
+    document.getElementById('loadingMessage').textContent = 'Verifying your email...';
+    
+    try {
+        // Use GET request to avoid CORS issues
+        const url = `${GOOGLE_SCRIPT_URL}?action=checkEmail&email=${encodeURIComponent(email)}`;
+        console.log('🟡 Sending GET request to:', url);
+        
+        const response = await fetch(url);
+        console.log('🟢 Response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        console.log('🟢 Server response:', result);
+        
+        document.getElementById('loadingModal').classList.remove('active');
+        
+        if (result.success) {
+            if (result.alreadySubmitted) {
+                console.log('🔴 Exam already submitted - blocking attempt');
+                document.getElementById('alreadySubmittedModal').classList.add('active');
+            } else {
+                console.log('🟢 Email verified. Domain:', result.domain);
+                userData = {
+                    name: name,
+                    email: email,
+                    domain: result.domain
+                };
+                document.getElementById('confirmModal').classList.add('active');
+            }
+        } else {
+            console.log('🔴 Server returned error:', result.message);
+            alert('Error: ' + result.message);
+        }
+    } catch (error) {
+        console.error('🔴 Network Error:', error);
+        document.getElementById('loadingModal').classList.remove('active');
+        alert('Network error: ' + error.message);
+    }
+});
+
+function closeModal() {
+    document.getElementById('confirmModal').classList.remove('active');
+}
+
+function closeAlreadySubmittedModal() {
+    document.getElementById('alreadySubmittedModal').classList.remove('active');
+}
+
+async function startExam() {
+    closeModal();
+
+    // Request camera permission
+    try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        document.getElementById('camera').srcObject = cameraStream;
+        document.getElementById('cameraBox').srcObject = cameraStream;
+    } catch (err) {
+        alert('Camera permission is required to start the exam!');
+        return;
+    }
+
+    // Enter fullscreen
+    try {
+        await document.documentElement.requestFullscreen();
+    } catch (err) {
+        alert('Please allow fullscreen mode to start the exam');
+        return;
+    }
+
+    // Setup questions based on domain
+    currentQuestions = questionBank[userData.domain].slice();
+    shuffleArray(currentQuestions);
+    currentQuestions = currentQuestions.slice(0, 500);
+    answers = new Array(500).fill(null);
+
+    // Switch to exam screen
+    document.querySelector('.registration-screen').classList.remove('active');
+    document.querySelector('.exam-screen').classList.add('active');
+
+    // Show camera box
+    document.querySelector('.camera-container').style.display = 'block';
+
+    // Start timer
+    startTimer();
+    displayQuestion();
+
+    // Start face detection simulation
+    startFaceDetectionSimulation();
+
+    // Monitor tab visibility
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    
+    // Prevent page reload/close
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    // Record exam start time
+    examStartTime = Date.now();
+    
+    // Schedule fake detections
+    scheduleFakeDetections();
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+// ========== EXAM LOGIC ==========
+function displayQuestion() {
+    const q = currentQuestions[currentQuestionIndex];
+    document.getElementById('questionText').textContent = `${currentQuestionIndex + 1}. ${q.q}`;
+    document.getElementById('currentQ').textContent = currentQuestionIndex + 1;
+    document.getElementById('totalQ').textContent = currentQuestions.length;
+
+    const optionsContainer = document.getElementById('optionsContainer');
+    optionsContainer.innerHTML = '';
+
+    q.options.forEach((option, index) => {
+        const div = document.createElement('div');
+        div.className = 'option';
+        if (answers[currentQuestionIndex] === index) {
+            div.classList.add('selected');
+        }
+        div.textContent = option;
+        div.onclick = () => selectOption(index);
+        optionsContainer.appendChild(div);
+    });
+
+    updateProgress();
+}
+
+function selectOption(index) {
+    answers[currentQuestionIndex] = index;
+    
+    // Update selected option
+    const options = document.querySelectorAll('.option');
+    options.forEach(option => option.classList.remove('selected'));
+    options[index].classList.add('selected');
+    
+    // Auto move to next question after 0.5s
+    setTimeout(() => {
+        if (currentQuestionIndex < currentQuestions.length - 1) {
+            currentQuestionIndex++;
+            displayQuestion();
+        } else {
+            submitExam();
+        }
+    }, 500);
+}
+
+function updateProgress() {
+    const progress = ((currentQuestionIndex + 1) / currentQuestions.length) * 100;
+    document.getElementById('progressBar').style.width = progress + '%';
+}
+
+// ========== TIMER ==========
+function startTimer() {
+    timerInterval = setInterval(() => {
+        timeRemaining--;
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        document.getElementById('timer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+        if (timeRemaining <= 0) {
+            submitExam();
+        }
+    }, 1000);
+}
+
+// ========== FACE DETECTION SIMULATION ==========
+function startFaceDetectionSimulation() {
+    // Start face detection animation
+    faceDetectionInterval = setInterval(() => {
+        simulateFaceMovement();
+    }, 100);
+}
+
+function simulateFaceMovement() {
+    const faceOverlay = document.getElementById('faceOverlay');
+    
+    // Move face position slightly for realistic movement
+    facePosition.x += faceDirection.x * (Math.random() * 2 - 1);
+    facePosition.y += faceDirection.y * (Math.random() * 2 - 1);
+    
+    // Keep face within camera bounds
+    if (facePosition.x < 20) {
+        facePosition.x = 20;
+        faceDirection.x = 1;
+    } else if (facePosition.x > 100) {
+        facePosition.x = 100;
+        faceDirection.x = -1;
+    }
+    
+    if (facePosition.y < 20) {
+        facePosition.y = 20;
+        faceDirection.y = 1;
+    } else if (facePosition.y > 80) {
+        facePosition.y = 80;
+        faceDirection.y = -1;
+    }
+    
+    // Update face overlay position
+    faceOverlay.style.display = 'block';
+    faceOverlay.style.left = `${facePosition.x}px`;
+    faceOverlay.style.top = `${facePosition.y}px`;
+    faceOverlay.style.width = `${facePosition.width}px`;
+    faceOverlay.style.height = `${facePosition.height}px`;
+}
+
+function scheduleFakeDetections() {
+    // Schedule first fake detection after 6 seconds
+    setTimeout(() => {
+        if (!isSubmitting) {
+            triggerWarning("AI Detection: Minor face movement detected");
+        }
+    }, 6000);
+    
+    // Schedule second fake detection after 10 minutes (600 seconds)
+    setTimeout(() => {
+        if (!isSubmitting) {
+            triggerWarning("AI Detection: Eye movement pattern detected");
+        }
+    }, 600000);
+    
+    // Schedule third fake detection near the end (last 5 minutes)
+    setTimeout(() => {
+        if (!isSubmitting) {
+            triggerWarning("AI Detection: Maintaining proper posture");
+        }
+    }, (EXAM_DURATION - 300) * 1000);
+}
+
+function triggerWarning(reason) {
+    warningCount++;
+    document.getElementById('warningCount').textContent = warningCount;
+    document.getElementById('warningIndicator').style.display = 'block';
+    
+    // Show warning for 5 seconds
+    setTimeout(() => {
+        document.getElementById('warningIndicator').style.display = 'none';
+    }, 5000);
+    
+    console.log(`Warning ${warningCount}: ${reason}`);
+}
+
+// ========== PROCTORING ==========
+function handleVisibilityChange() {
+    if (document.hidden) {
+        console.log("Tab switch detected. Auto-submitting exam...");
+        submitExam();
+    }
+}
+
+function handleFullscreenChange() {
+    if (!document.fullscreenElement) {
+        console.log("Fullscreen exited. Auto-submitting exam...");
+        submitExam();
+    }
+}
+
+function handleBeforeUnload(e) {
+    if (document.querySelector('.exam-screen').classList.contains('active') && !isSubmitting) {
+        // Submit exam immediately before page unloads
+        console.log("Page unload detected. Auto-submitting exam...");
+        submitExamSync();
+        
+        // Show a message to user
+        e.preventDefault();
+        e.returnValue = 'Your exam is being submitted. Please wait...';
+        return 'Your exam is being submitted. Please wait...';
+    }
+}
+
+// ========== SUBMISSION ==========
+function submitExamSync() {
+    // This function submits the exam synchronously without waiting for promises
+    isSubmitting = true;
+    
+    // Calculate score
+    let score = 0;
+    currentQuestions.forEach((q, i) => {
+        if (answers[i] === q.correct) score++;
+    });
+
+    console.log('📊 Sync Calculated score:', score);
+
+    // Stop camera and hide camera box
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+    }
+    
+    // Use sendBeacon for reliable submission even during page unload
+    const submissionData = {
+        action: 'submitExam',
+        name: userData.name,
+        email: userData.email,
+        domain: userData.domain,
+        score: score,
+        timestamp: new Date().toLocaleString(),
+        warnings: warningCount
+    };
+    
+    const blob = new Blob([JSON.stringify(submissionData)], {type: 'application/json'});
+    navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob);
+    
+    // Also try GET as backup (non-blocking)
+    const getUrl = `${GOOGLE_SCRIPT_URL}?action=submitExam&email=${encodeURIComponent(userData.email)}&score=${score}&domain=${encodeURIComponent(userData.domain)}`;
+    fetch(getUrl).catch(e => console.log('GET backup failed:', e));
+    
+    // Show success screen immediately (NO SCORE DISPLAYED)
+    document.querySelector('.exam-screen').classList.remove('active');
+    document.querySelector('.success-screen').classList.add('active');
+    
+    console.log("Exam submitted synchronously");
+}
+
+async function submitExam() {
+    if (isSubmitting) return;
+    
+    isSubmitting = true;
+    console.log("Starting exam submission...");
+    
+    // Calculate score FIRST (before any delays)
+    let score = 0;
+    currentQuestions.forEach((q, i) => {
+        if (answers[i] === q.correct) score++;
+    });
+
+    console.log('📊 Calculated score:', score, 'out of', currentQuestions.length);
+
+    // IMMEDIATELY show success screen (no loading delay)
+    document.querySelector('.exam-screen').classList.remove('active');
+    document.querySelector('.success-screen').classList.add('active');
+
+    // Then clean up resources (non-blocking)
+    cleanupExamResources();
+
+    // Submit score in background (non-blocking)
+    submitScoreInBackground(score);
+}
+
+function cleanupExamResources() {
+    // Clear all intervals
+    clearInterval(timerInterval);
+    if (faceDetectionInterval) clearInterval(faceDetectionInterval);
+    
+    // Remove event listeners
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+
+    // Stop camera
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+    }
+    document.querySelector('.camera-container').style.display = 'none';
+
+    // Exit fullscreen
+    if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+    }
+}
+
+function submitScoreInBackground(score) {
+    // Submit using sendBeacon (fastest method - doesn't wait for response)
+    const submissionData = {
+        action: 'submitExam',
+        name: userData.name,
+        email: userData.email,
+        domain: userData.domain,
+        score: score,
+        timestamp: new Date().toLocaleString(),
+        warnings: warningCount
+    };
+    
+    const blob = new Blob([JSON.stringify(submissionData)], {type: 'application/json'});
+    const beaconSent = navigator.sendBeacon(GOOGLE_SCRIPT_URL, blob);
+    console.log('📤 Beacon submission:', beaconSent ? '✅ Success' : '❌ Failed');
+
+    // Also try GET as backup (non-blocking)
+    setTimeout(() => {
+        const getUrl = `${GOOGLE_SCRIPT_URL}?action=submitExam&email=${encodeURIComponent(userData.email)}&score=${score}&domain=${encodeURIComponent(userData.domain)}&name=${encodeURIComponent(userData.name)}`;
+        fetch(getUrl)
+            .then(response => response.json())
+            .then(result => console.log('✅ GET backup submission:', result.success))
+            .catch(error => console.log('❌ GET backup failed:', error));
+    }, 100);
+    
+    console.log("🎯 Exam completed instantly - score submitted in background");
+}
+
+// ========== INITIALIZATION ==========
+console.log("🎯 Online Exam System Loaded");
+console.log("🌐 Backend URL:", GOOGLE_SCRIPT_URL);
+
+// Test backend connection on load
+window.addEventListener('load', function() {
+    console.log("🔧 Testing backend connection...");
+    
+    fetch(GOOGLE_SCRIPT_URL)
+        .then(response => response.json())
+        .then(data => {
+            console.log("✅ Backend connection successful:", data);
+        })
+        .catch(error => {
+            console.error("❌ Backend connection failed:", error);
+        });
+});
+</script>
